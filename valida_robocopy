@@ -1,0 +1,42 @@
+Start-Transcript -path “D:\Logs\valida_robocopy.log”
+
+Write-Output “Executado em $(Get-Date -format g)”
+
+############### Verifica os logs do ROBOCOPY (Server1) ###############
+
+$erro = “ERROR: RETRY LIMIT EXCEEDED”
+
+$result = Get-ChildItem -path “C:\Users\Administrador\Desktop\Log_Robocopy\*.txt” | Select-String $erro | Select-Object -unique Filename | Format-Table -HideTableHeaders
+echo $result
+
+if ($result -eq $null)
+{
+echo Sem erro na rotina
+}
+else
+{
+Send-MailMessage -to “meu_email@meu_dominio.com.br” -From “server@meu_dominio.com.br” -Subject “Erro no rotina do ROBOCOPY (Server1) entre a origem e o destino.” -body “$erro. Favor verificar.” -SmtpServer 111.111.111.111
+
+echo Erro na rotina do ROBOCOPY: $erro. Um e-mail de alerta foi enviado.
+}
+
+############### Compressão dos logs para controle de evidência. ###############
+
+if (-not (test-path “$env:ProgramFiles\7-Zip\7z.exe”)) {throw “$env:ProgramFiles\7-Zip\7z.exe needed”}
+set-alias sz “$env:ProgramFiles\7-Zip\7z.exe”
+
+$timestamp = get-date -f yyyyMMdd
+
+############### Server1 ###############
+
+$source = “C:\Users\Administrador\Desktop\Log_Robocopy\*.txt”
+$target = “D:\$(Get-Date -UFormat “%Y”)\$(Get-Date -UFormat “%m”)”
+
+If (!(Test-Path $target))
+{
+mkdir “D:\Evidencia Backups\Robocopy\$(Get-Date -UFormat “%Y”)\$(Get-Date -UFormat “%m”)”
+}
+
+sz a -mx=9 $target\$timestamp.zip $source
+
+Stop-Transcript
