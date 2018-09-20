@@ -1,0 +1,7 @@
+Write-Output "Executado em $(Get-Date -format g)" > "D:\ScriptsAD\Logs\forfiles.log"
+
+# Para gerar log antes da exclusão.
+forfiles -p "D:\Geral" -d -7 -c "cmd /c IF @isdir == TRUE echo @path" >> "D:\ScriptsAD\Logs\forfiles.log"
+
+# Mantem os arquivos gerados nos últimos 7 dias e exclui os demais.
+forfiles -p "D:\Geral" -d -7 -c "cmd /c IF @isdir == TRUE rd /S /Q @path"
