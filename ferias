@@ -1,0 +1,13 @@
+$Date = Get-Date -format d
+$yesterday = (Get-Date).adddays(-1).ToString(“dd/MM/yyyy”)
+
+Import-Csv “D:\ScriptsAD\ferias.txt” | ForEach-Object {
+If ($_.datainic -eq $Date) {
+Disable-ADAccount -Identity $_.usuario
+Send-MailMessage -to “meu-email@meu_dominio.com.br” -From “server1@meu_dominio.com.br” -Subject “Usuario $($_.usuario) iniciou as ferias em $($_.datainic).” -body “Usuario $($_.usuario) iniciou as ferias em $($_.datainic).” -SmtpServer 127.0.0.1
+}
+If ($_.datafim -eq $yesterday) {
+Enable-ADAccount -Identity $_.usuario
+Send-MailMessage -to “meu-email@meu_dominio.com.br” -From “server1@meu_dominio.com.br” -Subject “Usuario $($_.usuario) voltou de ferias em $($Date).” -body “Usuario $($_.usuario) voltou de ferias em $($Date).” -SmtpServer 127.0.0.1
+}
+}
