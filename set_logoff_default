@@ -1,0 +1,35 @@
+Start-Transcript -path "D:\ScriptsAD\Logs\set_logoff_default.log"
+
+
+############### Atualiza a lista temporária com os dados da lista default ###############
+
+$logoffdiario = Get-Content "D:\ScriptsAD\LogoffDiario\usuarios_liberados.txt"
+
+foreach($diario in $logoffdiario)
+
+{
+
+  ### Horário das 8:00 às 18:00 (utilizar o ADSI para obter o valor em decimal)
+  $logonHours = @{"logonHours" = [byte[]]$hours=@(000,000,000,000,252,063,000,252,063,000,252,063,000,252,063,000,252,063,000,000,000)}
+
+  Set-ADUser $diario -Replace $logonHours
+
+}
+
+Copy-Item "D:\ScriptsAD\LogoffDefault\usuarios_liberados.txt" -Destination "D:\ScriptsAD\LogoffDiario\usuarios_liberados.txt"
+
+Copy-Item "D:\ScriptsAD\LogoffDefault\pcs_liberados.txt" -Destination "D:\ScriptsAD\LogoffDiario\pcs_liberados.txt"
+
+$logoffdefault = Get-Content "D:\ScriptsAD\LogoffDiario\usuarios_liberados.txt"
+
+foreach($default in $logoffdefault)
+
+{
+  ### Sem restrição de horário
+  $logonHours = @{"logonHours" = [byte[]]$hours=@(255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255)}
+
+  Set-ADUser $default -Replace $logonHours
+
+}
+
+Stop-Transcript
