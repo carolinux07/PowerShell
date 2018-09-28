@@ -1,0 +1,124 @@
+param([int]$timeleft = 15)
+
+Start-Transcript -path "D:\ScriptsAD\Logs\logoff_connected_users.log"
+
+############### Ajusta do logon hours da lista de excessão de usuários ###############
+
+$UsersReleased = get-content "D:\ScriptsAD\LogoffDiario\usuarios_liberados.txt"
+
+foreach($User in $UsersReleased)
+
+{
+
+### Sem restrição de horário
+$logonHours = @{"logonHours" = [byte[]]$hours=@(255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255)}
+Set-ADUser $User -Replace $logonHours
+
+}
+
+
+############### Lista de máquinas via DHCP e faz comparação com as máquinas liberadas ###############
+
+Clear-Content "D:\ScriptsAD\logoff_pcs.txt"
+
+$ClientReleased = get-content "D:\ScriptsAD\LogoffDiario\pcs_liberados.txt"
+
+$dhcplist = Get-DhcpServerv4Lease -ComputerName "ad.dominio.local" -ScopeId 192.168.0.0 |Select-Object -property HostName
+
+$logofflist = New-object System.Collections.ArrayList
+
+foreach ($dhcpclient in $dhcplist) 
+
+{
+  $achou = 0
+ 
+  foreach ($Client in $ClientReleased)
+
+  {
+    
+    if ($dhcpclient -match $Client){$achou = 1}
+    
+  }
+
+  if ( $achou -eq 0) {$logofflist.Add($dhcpclient)}
+
+}
+
+$logofflist = $logofflist -replace '@{HostName=',''
+$logofflist = $logofflist -replace '}',''
+$logofflist = $logofflist -replace '\s',''
+
+"Flushing DNS"
+ipconfig /flushdns | out-null
+
+"Registering DNS"
+ipconfig /registerdns | out-null
+
+$logofflistping = New-object System.Collections.ArrayList
+
+
+Foreach($Clientping in $logofflist) {
+
+  if (!(Test-Connection -Cn $Clientping -BufferSize 16 -Count 1 -ea 0 -quiet))
+  {
+    $ping = 1
+    "Cliente $Clientping inacessível"
+  }
+
+  Else
+
+  {$ping = 0}
+
+  if ($ping -eq 0)
+  {
+    $logofflistping.Add($Clientping)
+    "Incluindo cliente $Clientping na lista de estacoes ativas"
+  }
+   
+}
+
+$logofflistping | Out-File "D:\ScriptsAD\logoff_pcs.txt"
+
+
+############### Logoff de estações ###############
+
+Write-Output "Iniciando contador em $(Get-Date -format g)"
+
+[System.Reflection.Assembly]::LoadWithPartialName("System.Diagnostics")
+
+$countdowntimer = new-object system.diagnostics.stopwatch
+
+while($timeleft -gt 0)
+
+{
+
+  "Acompanhando o Timeleft $timeleft e o Countdowntimer $Countdowntimer"
+
+  $countdowntimer.start()
+
+  foreach ($_ in get-content "D:\ScriptsAD\logoff_pcs.txt") {msg * /SERVER:$_ "Sua sessão será finalizada em $timeleft minutos. Salve seus arquivos e encerre os programas."}
+
+  while ($countdowntimer.elapsed.minutes -lt 5) {write-progress -activity "Elapsed Time" -status $countdowntimer.elapsed}
+
+  $countdowntimer.reset()
+
+  $timeleft -= 5
+
+}
+
+Write-Output "Iniciando o logoff das estações $(Get-Date -format g)"
+
+foreach ($_ in get-content "D:\ScriptsAD\logoff_pcs.txt") {(gwmi Win32_OperatingSystem -ComputerName $_).Win32Shutdown(4)}
+
+Stop-Transcript
+
+
+# Lista de códigos para o uso do Win32Shutdown( )
+# 0 - logoff
+# 4 - logoff forçado
+# 1 - desligamento
+# 5 - desligamento forçado
+# 2 - reiniciar
+# 6 - reinicialização forçada
+# 8 - desligar
+# 12 - desligamento forçado
