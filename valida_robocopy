@@ -27,8 +27,6 @@ set-alias sz “$env:ProgramFiles\7-Zip\7z.exe”
 
 $timestamp = get-date -f yyyyMMdd
 
-############### Server1 ###############
-
 $source = “C:\Users\Administrador\Desktop\Log_Robocopy\*.txt”
 $target = “D:\$(Get-Date -UFormat “%Y”)\$(Get-Date -UFormat “%m”)”
 
