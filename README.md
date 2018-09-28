@@ -16,3 +16,7 @@ Script para definir o hoário de início e fim de expediente, trabalhando com o 
 -> valida_robocopy:
 
 Script para automatizar a verificação dos logs do robocopy em busca de erro de perda de conexão. Além do envio de alerta em cado de problemas.
+
+-> Shutdown_hosts_fds
+
+Script em Powershell para desligar as estações ligadas, apartir da lista de estações do DHCP.
